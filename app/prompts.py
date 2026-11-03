@@ -26,7 +26,7 @@ Return ONLY a JSON object with exactly these keys:
   "summary": "1-2 sentences: what this document is and why the person got it",
   "actions": ["concrete step the person must take", "..."],
   "deadline": {{"date": "YYYY-MM-DD or null", "source_quote": "exact printed text or null"}},
-  "amount": {{"value": number or null, "source_quote": "exact printed text or null"}},
+  "amount": {{"value": number or null, "currency": "INR | USD | ... (ISO code as printed, default INR)", "source_quote": "exact printed text or null"}},
   "if_ignored": "what the document says happens if they do nothing, or null",
   "risk_level": "low | medium | high",
   "needs_professional": true or false,

@@ -22,9 +22,13 @@ LABELS = {
 }
 
 
-def _fmt_amount(value: float) -> str:
+SYMBOLS = {"INR": "₹", "USD": "$", "EUR": "€", "GBP": "£", "AED": "AED "}
+
+
+def _fmt_amount(value: float, currency: str | None = "INR") -> str:
+    sym = SYMBOLS.get((currency or "INR").upper(), f"{currency} ")
     v = round(float(value), 2)
-    return f"₹{v:,.0f}" if v == int(v) else f"₹{v:,.2f}"
+    return f"{sym}{v:,.0f}" if v == int(v) else f"{sym}{v:,.2f}"
 
 
 def render(data: dict, lang: str = "hi", pages_read: int | None = None, truncated: int = 0) -> str:
@@ -47,7 +51,7 @@ def render(data: dict, lang: str = "hi", pages_read: int | None = None, truncate
 
     amt = data.get("amount") or {}
     if amt.get("value") is not None:
-        lines.append(f"{L['amount']}: {_fmt_amount(amt['value'])}")
+        lines.append(f"{L['amount']}: {_fmt_amount(amt['value'], amt.get('currency'))}")
 
     if data.get("if_ignored"):
         lines.append(f"\n{L['ignore']}: {data['if_ignored']}")
