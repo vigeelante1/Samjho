@@ -1,0 +1,20 @@
+# One-click setup on Render: New → Blueprint → pick this repo.
+services:
+  - type: web
+    name: samjho
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: LLM_BASE_URL
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: DEFAULT_LANG
+        value: hi
+      - key: LLM_MAX_TOKENS
+        value: "4000"

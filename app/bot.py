@@ -1,5 +1,10 @@
-"""Telegram bot. Run with:  python -m app.bot"""
+"""Telegram bot.
+
+Local development (polling):   python -m app.bot
+Online (webhook):              handled by app/api.py when PUBLIC_URL / RENDER_EXTERNAL_URL is set
+"""
 import asyncio
+import hashlib
 import logging
 
 from telegram import Update
@@ -10,28 +15,29 @@ from app.llm import ModelError
 from app.pipeline import explain
 from app.prepare import UnsupportedFile
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)  # don't log request URLs (they contain the bot token)
 log = logging.getLogger("samjho")
 
 TEXT = {
     "hi": {
-        "start": ("🙏 Namaste! Main Samjho hoon.\n\n"
-                  "Kisi bhi bill, bank letter, tax notice ya sarkari kaagaz ki photo ya PDF bhejiye. "
-                  "Main simple bhasha mein bataunga: ye kya hai, aapko kya karna hai, aur kab tak.\n\n"
-                  "🔒 Aapki photo save nahi hoti. Padhne ke baad turant hata di jaati hai.\n"
-                  "Bhasha badalne ke liye: /lang"),
-        "reading": "📖 Padh raha hoon... 10-20 second lagenge.",
-        "send_doc": "Kripya document ki photo ya PDF bhejiye 📄",
-        "error": "😕 Abhi samajh nahi paaya. Thodi der baad dobara koshish karein.",
-        "lang": "Bhasha: Hindi ✅  (English ke liye /lang en)",
-        "too_big": "File bahut badi hai (max {mb} MB).",
+        "start": ("🙏 नमस्ते! मैं Samjho हूँ।\n\n"
+                  "किसी भी बिल, बैंक लेटर, टैक्स नोटिस या सरकारी कागज़ की फ़ोटो या PDF भेजिए। "
+                  "मैं आसान भाषा में बताऊँगा: यह क्या है, आपको क्या करना है, और कब तक।\n\n"
+                  "🔒 आपकी फ़ोटो सेव नहीं होती। पढ़ने के बाद तुरंत हटा दी जाती है।\n"
+                  "English के लिए: /lang"),
+        "reading": "📖 पढ़ रहा हूँ... 10-20 सेकंड लगेंगे।",
+        "send_doc": "कृपया दस्तावेज़ की फ़ोटो या PDF भेजिए 📄",
+        "error": "😕 अभी समझ नहीं पाया। थोड़ी देर बाद दोबारा कोशिश करें।",
+        "lang": "भाषा: हिंदी ✅  (English के लिए /lang en)",
+        "too_big": "फ़ाइल बहुत बड़ी है (अधिकतम {mb} MB)।",
     },
     "en": {
         "start": ("🙏 Hi! I'm Samjho.\n\n"
                   "Send a photo or PDF of any bill, bank letter, tax notice or government document. "
                   "I'll tell you in simple words what it is, what you need to do, and by when.\n\n"
                   "🔒 Your photo is never saved. It is deleted right after reading.\n"
-                  "Change language: /lang"),
+                  "हिंदी के लिए: /lang"),
         "reading": "📖 Reading... this takes 10-20 seconds.",
         "send_doc": "Please send a photo or PDF of the document 📄",
         "error": "😕 Couldn't process that right now. Please try again in a bit.",
@@ -86,17 +92,31 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(TEXT[_lang(ctx)]["send_doc"])
 
 
-def main() -> None:
+def webhook_secret() -> str:
+    """Secret Telegram sends back on every webhook call, so random people can't post fake updates."""
+    return config.WEBHOOK_SECRET or hashlib.sha256(config.TELEGRAM_BOT_TOKEN.encode()).hexdigest()[:48]
+
+
+def build_application(webhook: bool = False) -> Application:
     if not config.TELEGRAM_BOT_TOKEN:
         raise RuntimeError("Missing TELEGRAM_BOT_TOKEN in .env")
-    config.llm_api_key()  # fail fast if the model key is missing
-    app = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
+    builder = Application.builder().token(config.TELEGRAM_BOT_TOKEN).concurrent_updates(True)
+    if webhook:
+        builder = builder.updater(None)  # FastAPI receives the updates instead
+    app = builder.build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("lang", set_lang))
     app.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE | filters.Document.PDF, handle_file))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-    log.info("Samjho bot running. Press Ctrl+C to stop.")
-    app.run_polling()
+    return app
+
+
+def main() -> None:
+    config.llm_api_key()  # fail fast if the model key is missing
+    app = build_application()
+    log.info("Samjho bot running (polling). Press Ctrl+C to stop.")
+    # drop_pending_updates + deleting any webhook lets you run locally even after deploying
+    app.run_polling(drop_pending_updates=True)
 
 
 if __name__ == "__main__":
