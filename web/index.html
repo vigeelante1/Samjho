@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Samjho — kaagaz samjho, aasaan bhasha mein</title>
+<style>
+  :root { --bg:#faf7f2; --card:#fff; --ink:#1d1b18; --muted:#6b645a; --accent:#e4572e; --line:#e8e1d6; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141311; --card:#1d1c1a; --ink:#f2eee8; --muted:#a39b8f; --line:#2e2c29; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 system-ui, "Noto Sans Devanagari", sans-serif; }
+  main { max-width:640px; margin:0 auto; padding:40px 16px 64px; }
+  h1 { font-size:2.4rem; margin:0; letter-spacing:-.02em; }
+  h1 span { color:var(--accent); }
+  .tag { color:var(--muted); margin:6px 0 28px; }
+  .drop { display:block; border:2px dashed var(--line); background:var(--card); border-radius:16px; padding:36px 20px;
+          text-align:center; cursor:pointer; transition:border-color .2s; }
+  .drop:hover, .drop.over { border-color:var(--accent); }
+  .drop strong { display:block; font-size:1.1rem; }
+  .drop small { color:var(--muted); }
+  input[type=file] { display:none; }
+  .row { display:flex; gap:10px; margin:16px 0; align-items:center; flex-wrap:wrap; }
+  select, button { font:inherit; padding:10px 14px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); }
+  button { background:var(--accent); color:#fff; border:0; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  #out { white-space:pre-wrap; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin-top:20px; display:none; }
+  .note { color:var(--muted); font-size:.85rem; margin-top:28px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sam<span>jho</span></h1>
+  <p class="tag">Bill, bank letter, tax notice — photo daalo, simple bhasha mein samjho: kya hai, kya karna hai, kab tak.</p>
+
+  <label class="drop" id="drop">
+    <strong id="fname">📄 Document ki photo ya PDF chunein</strong>
+    <small>JPG, PNG ya PDF · max 10 MB</small>
+    <input type="file" id="file" accept="image/*,application/pdf">
+  </label>
+
+  <div class="row">
+    <select id="lang"><option value="hi">हिंदी</option><option value="en">English</option></select>
+    <button id="go" disabled>Samjhao →</button>
+  </div>
+
+  <div id="out"></div>
+
+  <p class="note">🔒 Aapka document save nahi hota. Samjho galti kar sakta hai — zaroori faisle se pehle original dekhein.
+     Powered by the BharatCode API.</p>
+</main>
+<script>
+  const file = document.getElementById("file"), go = document.getElementById("go"),
+        out = document.getElementById("out"), drop = document.getElementById("drop");
+  let chosen = null;
+  function pick(f) { chosen = f; document.getElementById("fname").textContent = "📄 " + f.name; go.disabled = false; }
+  file.onchange = () => file.files[0] && pick(file.files[0]);
+  ["dragover","dragenter"].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave","drop"].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", ev => ev.dataTransfer.files[0] && pick(ev.dataTransfer.files[0]));
+
+  go.onclick = async () => {
+    const body = new FormData();
+    body.append("file", chosen);
+    body.append("lang", document.getElementById("lang").value);
+    go.disabled = true; out.style.display = "block"; out.textContent = "📖 Padh raha hoon... (10-20 sec)";
+    try {
+      const r = await fetch("/api/explain", { method: "POST", body });
+      const j = await r.json();
+      out.textContent = r.ok ? j.message : "⚠️ " + (j.detail || "Kuch gadbad hui. Dobara koshish karein.");
+    } catch { out.textContent = "⚠️ Network error. Dobara koshish karein."; }
+    go.disabled = false;
+  };
+</script>
+</body>
+</html>
