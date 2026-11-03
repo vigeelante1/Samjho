@@ -218,3 +218,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Test documents stay local (may contain personal info)
+samples/*
+!samples/.gitkeep

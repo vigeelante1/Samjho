@@ -55,7 +55,14 @@ def test_render_hindi_and_professional_flag():
     data = verify(good_output(), today=TODAY)
     data["needs_professional"] = True
     msg = render(data, "hi")
-    assert "Ye kya hai" in msg and "₹2,340" in msg and "12 din baaki" in msg and "CA" in msg
+    assert "यह क्या है" in msg and "₹2,340" in msg and "15 नवंबर 2026" in msg and "12 दिन बाकी" in msg and "CA" in msg
+
+
+def test_render_shows_discrepancies_in_english():
+    data = verify(good_output(), today=TODAY)
+    data["discrepancies"] = ["Readings show 150 units, bill charges 450."]
+    msg = render(data, "en")
+    assert "15 Nov 2026" in msg and "doesn't add up" in msg and "150 units" in msg
 
 
 def test_prepare_image_and_pdf():

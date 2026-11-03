@@ -18,6 +18,10 @@ Rules:
 - Write summary, actions, if_ignored and notes in simple everyday language, short sentences, no jargon.
   Write them in {language}.
 - Never give legal or financial advice beyond what the document itself asks the person to do.
+- Check the document's own numbers against each other: meter readings vs units billed, line items vs total,
+  dates vs billing period. If something does not add up, explain it simply in "discrepancies"
+  (e.g. "Readings show 150 units used, but the bill charges for 450 units. Ask the company to check.").
+  Only report real mismatches you can see in the printed numbers; otherwise return an empty list.
 
 Return ONLY a JSON object with exactly these keys:
 {{
@@ -31,6 +35,7 @@ Return ONLY a JSON object with exactly these keys:
   "risk_level": "low | medium | high",
   "needs_professional": true or false,
   "unreadable_parts": ["..."],
+  "discrepancies": ["..."],
   "notes": "anything else important, or null"
 }}"""
 
