@@ -1,0 +1,6 @@
+Project: Samjho
+Hackathon: BharatCode Build League — Round 1
+Direction: Everyday assistance
+Model: qwen-3.8-27b via BharatCode API
+Builder: Vaibhav Sharma (@vigeelante1)
+What it does: Explains any official letter, bill or notice in simple Hindi/English — what it is, what to do, and by when.
