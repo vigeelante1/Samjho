@@ -222,3 +222,6 @@ __marimo__/
 # Test documents stay local (may contain personal info)
 samples/*
 !samples/.gitkeep
+
+# Personal project log (not for the public repo)
+SAMJHO_PROJECT_LOG.md
